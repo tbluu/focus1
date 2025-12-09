@@ -617,7 +617,7 @@
       apiKey: "AIzaSyBU7avb4R3fJl6qqmSTV7UQ1cYUEZ4odRs",
       authDomain: "focused-web.firebaseapp.com",
       projectId: "focused-web",
-      storageBucket: "focused-web.firebasestorage.app",
+      storageBucket: "focused-web.appspot.com",
       messagingSenderId: "646122627696",
       appId: "1:646122627696:web:20256f2ab444e1afaa4ab5",
       measurementId: "G-06QCLZ35HM"
@@ -954,21 +954,28 @@
       if (userSubjects.includes(name))
         return showToast("Môn đã tồn tại");
 
+      // cập nhật local array
       userSubjects.push(name);
+
+      // đảm bảo currentUser.subjects tồn tại
       currentUser.subjects = [...userSubjects];
 
+      // thêm dòng thời gian cho môn
+      if (!currentUser.subjectSeconds) currentUser.subjectSeconds = {};
       currentUser.subjectSeconds[name] = 0;
 
+      // lưu Firestore
       await saveUserProfile({
         subjects: currentUser.subjects,
         subjectSeconds: currentUser.subjectSeconds
       });
 
+      // cập nhật UI
       renderSubjects();
       $("subjectSel").value = name;
       $("newSubjectText").value = "";
 
-      showToast("Đã thêm môn");
+      showToast("Đã thêm môn mới", "success");
     };
 
     // ------------------------------------------------------------------------------
@@ -983,8 +990,12 @@
       const qs = [];
       snap.forEach(d => qs.push({ id: d.id, ...d.data() }));
 
+      // lưu global để toggleQuest() truy cập
+      window._lastQuests = qs;
+
       renderQuests(qs);
     }
+
 
     function renderQuests(qs) {
       const box = $("questsList");
@@ -1020,6 +1031,7 @@
       const ref = doc(userRef, "quests", q.id);
       const newDone = !q.done;
 
+      // cập nhật Firestore
       await setDoc(
         ref,
         {
@@ -1030,10 +1042,13 @@
         { merge: true }
       );
 
-      // Cập nhật local để render ngay
+      // cập nhật LOCAL object để UI đổi ngay
       q.done = newDone;
 
-      // Nếu hoàn thành → thưởng FP
+      // cập nhật UI ngay
+      renderQuests(window._lastQuests || []);
+
+      // thưởng FP khi done=true
       if (newDone) {
         addFP(5, true);
         await saveUserProfile();
@@ -1041,7 +1056,7 @@
         await fetchLeaderboardData();
       }
 
-      renderQuests([q]);
+      // load lại toàn bộ quests để đồng bộ
       await loadQuests();
     }
 
