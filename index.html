@@ -617,7 +617,7 @@
       apiKey: "AIzaSyBU7avb4R3fJl6qqmSTV7UQ1cYUEZ4odRs",
       authDomain: "focused-web.firebaseapp.com",
       projectId: "focused-web",
-      storageBucket: "focused-web.firebasestorage.app",
+      storageBucket: "focused-web.appspot.com",
       messagingSenderId: "646122627696",
       appId: "1:646122627696:web:20256f2ab444e1afaa4ab5",
       measurementId: "G-06QCLZ35HM"
@@ -791,9 +791,6 @@
     async function saveUserProfile(extra = {}) {
       if (!userRef) return;
 
-      // khắc phục lỗi user.uid undefined
-      const uid = currentUser.uid;
-
       const data = {
         ...currentUser,
         subjectSeconds,
@@ -804,14 +801,12 @@
         ...extra
       };
 
+      currentUser = data;
+      currentUser.uid = user.uid;
+
       await setDoc(userRef, data, { merge: true });
-
-      // cập nhật local state
-      currentUser = { ...data, uid };
-
       updateUserUI();
     }
-
 
     // ------------ UPDATE UI (avatar + FP + level + streak) ------------
     function updateUserUI() {
@@ -956,29 +951,32 @@
       const name = $("newSubjectText").value.trim();
       if (!name) return;
 
-      if (!currentUser.subjects) currentUser.subjects = [];
+      if (userSubjects.includes(name))
+        return showToast("Môn đã tồn tại");
 
-      if (currentUser.subjects.includes(name))
-        return showToast("Môn đã tồn tại", "warn");
+      // cập nhật local array
+      userSubjects.push(name);
 
-      currentUser.subjects.push(name);
-      userSubjects = [...currentUser.subjects];
+      // đảm bảo currentUser.subjects tồn tại
+      currentUser.subjects = [...userSubjects];
 
+      // thêm dòng thời gian cho môn
       if (!currentUser.subjectSeconds) currentUser.subjectSeconds = {};
       currentUser.subjectSeconds[name] = 0;
 
+      // lưu Firestore
       await saveUserProfile({
         subjects: currentUser.subjects,
         subjectSeconds: currentUser.subjectSeconds
       });
 
+      // cập nhật UI
       renderSubjects();
       $("subjectSel").value = name;
       $("newSubjectText").value = "";
 
       showToast("Đã thêm môn mới", "success");
     };
-
 
     // ------------------------------------------------------------------------------
     //                                QUESTS
