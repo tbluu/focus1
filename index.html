@@ -617,7 +617,7 @@
       apiKey: "AIzaSyBU7avb4R3fJl6qqmSTV7UQ1cYUEZ4odRs",
       authDomain: "focused-web.firebaseapp.com",
       projectId: "focused-web",
-      storageBucket: "focused-web.appspot.com",
+      storageBucket: "focused-web.firebasestorage.app",
       messagingSenderId: "646122627696",
       appId: "1:646122627696:web:20256f2ab444e1afaa4ab5",
       measurementId: "G-06QCLZ35HM"
@@ -955,13 +955,19 @@
         return showToast("Môn đã tồn tại");
 
       userSubjects.push(name);
-      subjectSeconds[name] = subjectSeconds[name] || 0;
+      currentUser.subjects = [...userSubjects];
+
+      currentUser.subjectSeconds[name] = 0;
+
+      await saveUserProfile({
+        subjects: currentUser.subjects,
+        subjectSeconds: currentUser.subjectSeconds
+      });
 
       renderSubjects();
       $("subjectSel").value = name;
       $("newSubjectText").value = "";
 
-      await saveUserProfile();
       showToast("Đã thêm môn");
     };
 
@@ -972,7 +978,7 @@
       if (!userRef) return;
 
       const colRef = collection(userRef, "quests");
-      const snap = await getDocs(colRef);
+      const snap = await getDocs(query(colRef, orderBy("createdAt", "desc")));
 
       const qs = [];
       snap.forEach(d => qs.push({ id: d.id, ...d.data() }));
@@ -1016,11 +1022,18 @@
 
       await setDoc(
         ref,
-        { text: q.text, done: newDone, createdAt: q.createdAt || new Date() },
+        {
+          text: q.text,
+          done: newDone,
+          createdAt: q.createdAt || new Date()
+        },
         { merge: true }
       );
 
-      // reward FP
+      // Cập nhật local để render ngay
+      q.done = newDone;
+
+      // Nếu hoàn thành → thưởng FP
       if (newDone) {
         addFP(5, true);
         await saveUserProfile();
@@ -1028,6 +1041,7 @@
         await fetchLeaderboardData();
       }
 
+      renderQuests([q]);
       await loadQuests();
     }
 
@@ -1457,15 +1471,25 @@
 
       showToast("Đang lưu avatar...", "info");
 
-      const avatarPath = `avatars/${currentUser.uid}_${Date.now()}.png`;
+      // tạo folder riêng cho user
+      const avatarPath = `avatars/${currentUser.uid}/${Date.now()}.png`;
       const imgRef = storageRef(storage, avatarPath);
 
+      // upload file base64
       await uploadString(imgRef, pendingAvatar, "data_url");
+
+      // lấy URL public
       const url = await getDownloadURL(imgRef);
 
+      // cập nhật Firestore
       currentUser.avatar = url;
       await saveUserProfile({ avatar: url });
+      await addDoc(collection(userRef, "avatars"), {
+        url,
+        createdAt: new Date()
+      });
 
+      // cập nhật UI
       $("avatarImg").src = url;
       $("avatarBtn").innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:cover;">`;
 
