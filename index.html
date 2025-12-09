@@ -727,12 +727,10 @@
     function addFP(amount, countToTotal = true) {
       if (!currentUser) return;
 
-      const newFp = (currentUser.fp || 0) + amount;
-      currentUser.fp = Math.max(0, newFp);
+      currentUser.fp = (currentUser.fp || 0) + amount;
 
       if (countToTotal) {
-        const newTotal = (currentUser.totalScore || 0) + amount;
-        currentUser.totalScore = Math.max(0, newTotal);
+        currentUser.totalScore = (currentUser.totalScore || 0) + amount;
       }
     }
 
@@ -994,8 +992,12 @@
       const qs = [];
       snap.forEach(d => qs.push({ id: d.id, ...d.data() }));
 
+      // lưu global để toggleQuest() truy cập
+      window._lastQuests = qs;
+
       renderQuests(qs);
     }
+
 
     function renderQuests(qs) {
       const box = $("questsList");
@@ -1026,12 +1028,10 @@
     }
 
     async function toggleQuest(q) {
-      if (!userRef || !currentUser) return;
-
-      const wasDone = !!q.done;       // trạng thái trước khi click
-      const newDone = !wasDone;       // trạng thái sau khi click
+      if (!userRef) return;
 
       const ref = doc(userRef, "quests", q.id);
+      const newDone = !q.done;
 
       // cập nhật Firestore
       await setDoc(
@@ -1044,30 +1044,21 @@
         { merge: true }
       );
 
-      // tính điểm thay đổi theo trạng thái
-      let delta = 0;
-      if (!wasDone && newDone) {
-        // lần đầu hoàn thành
-        delta = 5;
-      } else if (wasDone && !newDone) {
-        // reset lại quest
-        delta = -5;
-      }
+      // cập nhật LOCAL object để UI đổi ngay
+      q.done = newDone;
 
-      if (delta !== 0) {
-        addFP(delta, true);
+      // cập nhật UI ngay
+      renderQuests(window._lastQuests || []);
+
+      // thưởng FP khi done=true
+      if (newDone) {
+        addFP(5, true);
         await saveUserProfile();
-
-        if (delta > 0) {
-          showToast(`Hoàn thành quest +${delta} FP`, "success");
-        } else {
-          showToast(`Reset quest ${delta} FP`, "warn"); // delta âm, VD: -5
-        }
-
+        showToast("Hoàn thành quest +5 FP", "success");
         await fetchLeaderboardData();
       }
 
-      // load lại & render lại danh sách quest
+      // load lại toàn bộ quests để đồng bộ
       await loadQuests();
     }
 
