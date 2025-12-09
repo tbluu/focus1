@@ -727,10 +727,12 @@
     function addFP(amount, countToTotal = true) {
       if (!currentUser) return;
 
-      currentUser.fp = (currentUser.fp || 0) + amount;
+      const newFp = (currentUser.fp || 0) + amount;
+      currentUser.fp = Math.max(0, newFp);
 
       if (countToTotal) {
-        currentUser.totalScore = (currentUser.totalScore || 0) + amount;
+        const newTotal = (currentUser.totalScore || 0) + amount;
+        currentUser.totalScore = Math.max(0, newTotal);
       }
     }
 
@@ -791,6 +793,9 @@
     async function saveUserProfile(extra = {}) {
       if (!userRef) return;
 
+      // khắc phục lỗi user.uid undefined
+      const uid = currentUser.uid;
+
       const data = {
         ...currentUser,
         subjectSeconds,
@@ -801,12 +806,14 @@
         ...extra
       };
 
-      currentUser = data;
-      currentUser.uid = user.uid;
-
       await setDoc(userRef, data, { merge: true });
+
+      // cập nhật local state
+      currentUser = { ...data, uid };
+
       updateUserUI();
     }
+
 
     // ------------ UPDATE UI (avatar + FP + level + streak) ------------
     function updateUserUI() {
@@ -951,32 +958,29 @@
       const name = $("newSubjectText").value.trim();
       if (!name) return;
 
-      if (userSubjects.includes(name))
-        return showToast("Môn đã tồn tại");
+      if (!currentUser.subjects) currentUser.subjects = [];
 
-      // cập nhật local array
-      userSubjects.push(name);
+      if (currentUser.subjects.includes(name))
+        return showToast("Môn đã tồn tại", "warn");
 
-      // đảm bảo currentUser.subjects tồn tại
-      currentUser.subjects = [...userSubjects];
+      currentUser.subjects.push(name);
+      userSubjects = [...currentUser.subjects];
 
-      // thêm dòng thời gian cho môn
       if (!currentUser.subjectSeconds) currentUser.subjectSeconds = {};
       currentUser.subjectSeconds[name] = 0;
 
-      // lưu Firestore
       await saveUserProfile({
         subjects: currentUser.subjects,
         subjectSeconds: currentUser.subjectSeconds
       });
 
-      // cập nhật UI
       renderSubjects();
       $("subjectSel").value = name;
       $("newSubjectText").value = "";
 
       showToast("Đã thêm môn mới", "success");
     };
+
 
     // ------------------------------------------------------------------------------
     //                                QUESTS
@@ -990,12 +994,8 @@
       const qs = [];
       snap.forEach(d => qs.push({ id: d.id, ...d.data() }));
 
-      // lưu global để toggleQuest() truy cập
-      window._lastQuests = qs;
-
       renderQuests(qs);
     }
-
 
     function renderQuests(qs) {
       const box = $("questsList");
@@ -1026,10 +1026,12 @@
     }
 
     async function toggleQuest(q) {
-      if (!userRef) return;
+      if (!userRef || !currentUser) return;
+
+      const wasDone = !!q.done;       // trạng thái trước khi click
+      const newDone = !wasDone;       // trạng thái sau khi click
 
       const ref = doc(userRef, "quests", q.id);
-      const newDone = !q.done;
 
       // cập nhật Firestore
       await setDoc(
@@ -1042,21 +1044,30 @@
         { merge: true }
       );
 
-      // cập nhật LOCAL object để UI đổi ngay
-      q.done = newDone;
+      // tính điểm thay đổi theo trạng thái
+      let delta = 0;
+      if (!wasDone && newDone) {
+        // lần đầu hoàn thành
+        delta = 5;
+      } else if (wasDone && !newDone) {
+        // reset lại quest
+        delta = -5;
+      }
 
-      // cập nhật UI ngay
-      renderQuests(window._lastQuests || []);
-
-      // thưởng FP khi done=true
-      if (newDone) {
-        addFP(5, true);
+      if (delta !== 0) {
+        addFP(delta, true);
         await saveUserProfile();
-        showToast("Hoàn thành quest +5 FP", "success");
+
+        if (delta > 0) {
+          showToast(`Hoàn thành quest +${delta} FP`, "success");
+        } else {
+          showToast(`Reset quest ${delta} FP`, "warn"); // delta âm, VD: -5
+        }
+
         await fetchLeaderboardData();
       }
 
-      // load lại toàn bộ quests để đồng bộ
+      // load lại & render lại danh sách quest
       await loadQuests();
     }
 
