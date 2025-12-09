@@ -1,0 +1,1494 @@
+<!doctype html>
+<html lang="vi">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>FocusED + Firebase</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg: linear-gradient(135deg, #06b6d4, #0ea5e9);
+      --accent: #0ea5e9;
+      --card-bg: rgba(15, 23, 42, 0.9);
+      --card-border: rgba(148, 163, 184, 0.4);
+      --text-main: #fff;
+    }
+
+    * {
+      box-sizing: border-box;
+      font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial
+    }
+
+    html,
+    body {
+      margin: 0;
+      height: 100%;
+    }
+
+    body {
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header {
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo {
+      width: 40px;
+      height: 40px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.12);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 18px;
+      overflow: hidden;
+      cursor: pointer;
+    }
+
+    .title {
+      font-weight: 800;
+      font-size: 20px;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .mini-text {
+      font-size: 12px;
+      opacity: .8;
+    }
+
+    .container {
+      padding: 0 20px 24px;
+    }
+
+    .grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .col {
+      flex: 1;
+      min-width: 280px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 14px 16px;
+      margin-bottom: 14px;
+      border: 1px solid var(--card-border);
+      box-shadow: 0 18px 45px rgba(15, 23, 42, 0.6);
+    }
+
+    .input {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: none;
+      margin-top: 4px;
+      background: rgba(15, 23, 42, 0.9);
+      color: #e5e7eb;
+    }
+
+    .btn {
+      padding: 8px 12px;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      font-weight: 700;
+      background: linear-gradient(135deg, #06b6d4, #0ea5e9);
+      color: #fff;
+    }
+
+    .btn.ghost {
+      background: transparent;
+      border: 1px solid rgba(148, 163, 184, 0.6);
+    }
+
+    .btn.small {
+      font-size: 12px;
+      padding: 5px 9px;
+    }
+
+    .btn[disabled] {
+      opacity: .4;
+      cursor: not-allowed;
+    }
+
+    /* AUTH MODAL */
+    #authModal {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.94);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+
+    #authBox {
+      width: 100%;
+      max-width: 430px;
+      background: rgba(15, 23, 42, 1);
+      border-radius: 18px;
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      padding: 18px 18px 20px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.7);
+    }
+
+    #authTabs {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    #authTabs button {
+      flex: 1;
+    }
+
+    /* TIMER */
+    .timerWrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .timerCircle {
+      position: relative;
+      width: 150px;
+      height: 150px;
+    }
+
+    .timerCircle svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    .timerCenter {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Lists */
+    #leaderboardList {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    #leaderboardList li {
+      padding: 5px 2px;
+      border-bottom: 1px dashed rgba(148, 163, 184, 0.4);
+      font-size: 14px;
+    }
+
+    #questsList>div {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 4px 0;
+      font-size: 14px;
+    }
+
+    /* LOCK OVERLAY */
+    #lockOverlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.94);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9000;
+      color: #fff;
+    }
+
+    #lockOverlayBox {
+      background: rgba(15, 23, 42, 1);
+      border-radius: 16px;
+      padding: 18px;
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      max-width: 320px;
+      text-align: center;
+    }
+
+    /* TOAST */
+    #toast {
+      position: fixed;
+      left: 50%;
+      bottom: 30px;
+      transform: translateX(-50%) translateY(6px);
+      padding: 10px 14px;
+      border-radius: 10px;
+      background: rgba(15, 23, 42, 0.96);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .2s, transform .2s;
+      z-index: 20000;
+    }
+
+    /* AVATAR MODAL */
+    #avatarModal {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.94);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9100;
+    }
+
+    #avatarBox {
+      background: rgba(15, 23, 42, 1);
+      padding: 16px;
+      border-radius: 14px;
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      width: 100%;
+      max-width: 360px;
+    }
+
+    #avatarGrid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .avatarPreset {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      overflow: hidden;
+      cursor: pointer;
+      border: 2px solid transparent;
+    }
+
+    .avatarPreset img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .avatarPreset.selected {
+      border-color: var(--accent);
+    }
+
+    /* 10-minute FP block bar */
+    #fpBlockOuter {
+      margin-top: 4px;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(148, 163, 184, 0.35);
+      overflow: hidden;
+    }
+
+    #fpBlockInner {
+      height: 100%;
+      width: 0%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #22c55e, #16a34a);
+    }
+
+    /* Leaderboard controls */
+    #lbControls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 6px;
+    }
+
+    @media(max-width:720px) {
+      .grid {
+        flex-direction: column;
+      }
+
+      .timerWrap {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
+
+    #leaderboardList li {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- AUTH -->
+  <div id="authModal">
+    <div id="authBox">
+      <h2 style="margin:0 0 4px;font-weight:800;">FocusED</h2>
+      <div class="mini-text" style="margin-bottom:8px;">Đăng nhập để lưu FP, streak và bảng xếp hạng chung.</div>
+
+      <div id="authTabs">
+        <button id="tabLogin" class="btn" type="button">Đăng nhập</button>
+        <button id="tabRegister" class="btn ghost" type="button">Đăng ký</button>
+      </div>
+
+      <div id="authLoginForm">
+        <div class="mini-text">Email</div>
+        <input id="loginEmail" class="input" type="email" autocomplete="email">
+        <div class="mini-text" style="margin-top:8px;">Mật khẩu</div>
+        <input id="loginPass" class="input" type="password" autocomplete="current-password">
+        <button id="loginBtn" class="btn" style="margin-top:12px;width:100%;" type="button">Đăng nhập</button>
+      </div>
+
+      <div id="authRegisterForm" style="display:none;">
+        <div class="mini-text">Email</div>
+        <input id="regEmail" class="input" type="email" autocomplete="email">
+        <div class="mini-text" style="margin-top:8px;">Mật khẩu</div>
+        <input id="regPass1" class="input" type="password" autocomplete="new-password">
+        <div class="mini-text" style="margin-top:8px;">Nhập lại mật khẩu</div>
+        <input id="regPass2" class="input" type="password" autocomplete="new-password">
+        <div class="mini-text" style="margin-top:8px;">Tên hiển thị</div>
+        <input id="regName" class="input" type="text">
+        <button id="registerBtn" class="btn" style="margin-top:12px;width:100%;" type="button">Tạo tài khoản</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- AVATAR MODAL -->
+  <div id="avatarModal">
+    <div id="avatarBox">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div style="font-weight:700;">Chọn avatar</div>
+        <button id="avatarClose" class="btn ghost small" type="button">Đóng</button>
+      </div>
+      <div id="avatarGrid"></div>
+      <div style="margin-top:10px;">
+        <div class="mini-text">Hoặc tải ảnh từ máy</div>
+        <input id="avatarFile" type="file" accept="image/*" style="margin-top:4px;width:100%;" />
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:6px;margin-top:10px;">
+        <button id="avatarApply" class="btn" type="button" disabled>Áp dụng</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOCK OVERLAY -->
+  <div id="lockOverlay">
+    <div id="lockOverlayBox">
+      <h3 style="margin-top:0;">Đang trong phiên tập trung</h3>
+      <p class="mini-text">Đừng rời tab hoặc thoát fullscreen. Nếu thoát ra ngoài, phiên sẽ bị huỷ.</p>
+      <button id="lockOkBtn" class="btn ghost" data-lock-exempt="true" type="button">Đã hiểu</button>
+    </div>
+  </div>
+
+  <!-- MAIN APP -->
+  <div id="app" style="display:none;">
+
+    <div class="header">
+      <div class="brand">
+        <div id="avatarBtn" class="logo">
+          <span>FE</span>
+        </div>
+        <div>
+          <div id="displayName" class="title" style="font-size:18px;">User</div>
+
+          <!-- 2 dòng theo yêu cầu -->
+          <div id="lineTotal" class="mini-text">Tổng điểm: 0 • Cấp: 1</div>
+          <div id="lineFP" class="mini-text">FP hiện có: 0</div>
+        </div>
+      </div>
+
+      <div class="header-right">
+
+        <div>
+          <div class="mini-text">Theme</div>
+          <select id="themeSel" class="input" style="width:150px;">
+            <option value="ocean">Ocean</option>
+            <option value="sunset">Sunset</option>
+            <option value="forest">Forest</option>
+          </select>
+        </div>
+
+        <button id="logoutBtn" class="btn ghost" type="button">Đăng xuất</button>
+      </div>
+    </div>
+
+    <div class="container">
+      <div class="grid">
+
+        <!-- LEFT COLUMN -->
+        <div class="col">
+
+          <!-- STREAK -->
+          <div class="card">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="width:58px;height:58px;border-radius:18px;overflow:hidden;background:rgba(15,23,42,0.8);">
+                <img id="avatarImg" src="" style="width:100%;height:100%;object-fit:cover;" />
+              </div>
+
+              <div style="flex:1;">
+                <div class="mini-text">Chuỗi ngày</div>
+
+                <div style="display:flex;align-items:center;gap:6px;">
+                  <div
+                    style="width:22px;height:22px;border-radius:50%;background:radial-gradient(circle,#f97316,#ea580c);box-shadow:0 0 12px rgba(248,113,113,0.9);">
+                  </div>
+                  <span id="streakText" style="font-weight:700;">0 ngày</span>
+                </div>
+
+                <div class="mini-text" style="margin-top:4px;">
+                  Hoàn thành ít nhất 1 phiên mỗi ngày để giữ streak.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- QUESTS -->
+          <div class="card">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-weight:700;">Quest hôm nay</span>
+              <span class="mini-text">Hoàn thành để nhận FP</span>
+            </div>
+
+            <div id="questsList" style="margin-top:8px;"></div>
+
+            <div style="display:flex;gap:6px;margin-top:10px;">
+              <input id="newQuestText" class="input" placeholder="Thêm quest mới...">
+              <button id="addQuestBtn" class="btn ghost small" type="button">Thêm</button>
+            </div>
+          </div>
+
+          <!-- LEADERBOARD -->
+          <div class="card">
+            <div style="font-weight:700;margin-bottom:6px;">Bảng xếp hạng</div>
+
+            <ul id="leaderboardList"></ul>
+
+            <div id="lbControls">
+              <button id="lbPrev" class="btn ghost small">Trang trước</button>
+              <span id="lbPageInfo" class="mini-text">0/0</span>
+              <button id="lbNext" class="btn ghost small">Trang sau</button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- RIGHT COLUMN -->
+        <div class="col">
+
+          <!-- TIMER -->
+          <div class="card">
+            <div class="timerWrap">
+
+              <!-- Circle Timer -->
+              <div class="timerCircle">
+                <svg viewBox="0 0 100 100">
+                  <circle cx="50" cy="50" r="45" stroke="rgba(148,163,184,0.4)" stroke-width="8" fill="none" />
+                  <circle id="progressCircle" cx="50" cy="50" r="45" stroke="#e5e7eb" stroke-width="8" fill="none"
+                    stroke-dasharray="282.6" stroke-dashoffset="282.6" stroke-linecap="round"
+                    transform="rotate(-90 50 50)" />
+                </svg>
+
+                <div class="timerCenter">
+                  <div id="timeLabel" style="font-size:26px;font-weight:700;">25:00</div>
+                  <div id="timerSub" class="mini-text" style="margin-top:2px;">Sẵn sàng</div>
+                </div>
+              </div>
+
+              <!-- Timer Settings -->
+              <div style="flex:1;">
+                <div class="mini-text">Môn học</div>
+                <select id="subjectSel" class="input">
+                  <option value="Toán">Toán</option>
+                  <option value="Tiếng Anh">Tiếng Anh</option>
+                  <option value="Lý thuyết">Lý thuyết</option>
+                </select>
+
+                <div style="display:flex;gap:6px;margin-top:8px;">
+                  <input id="newSubjectText" class="input" placeholder="Thêm môn mới...">
+                  <button id="addSubjectBtn" class="btn ghost small" type="button">Thêm</button>
+                </div>
+
+                <div class="mini-text" style="margin-top:8px;">Thời lượng</div>
+                <select id="durationSel" class="input">
+                  <option value="25">25 phút</option>
+                  <option value="50">50 phút</option>
+                  <option value="15">15 phút</option>
+                </select>
+
+                <div style="margin-top:10px;display:flex;gap:8px;">
+                  <button id="startBtn" class="btn" type="button">Bắt đầu</button>
+                  <button id="endBtn" class="btn ghost" data-lock-exempt="true" type="button">Kết thúc phiên</button>
+                </div>
+
+                <div class="mini-text" style="margin-top:6px;">
+                  Chu kỳ Pomodoro: <span id="cycleInfo">0/4</span>
+                </div>
+
+                <div class="mini-text" style="margin-top:6px;">Tiến tới mốc 10 phút tiếp theo</div>
+                <div id="fpBlockOuter">
+                  <div id="fpBlockInner"></div>
+                </div>
+                <div id="fpBlockLabel" class="mini-text" style="margin-top:2px;">0 / 10 phút</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- STORE -->
+          <div class="card">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <div style="font-weight:700;">Cửa hàng</div>
+              <div class="mini-text">Dùng FP để mở lootbox/badge</div>
+            </div>
+
+            <div id="storeList" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:8px;font-size:13px;">
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+  <audio id="sound-complete" src="https://actions.google.com/sounds/v1/cartoon/pop.ogg"></audio>
+  <audio id="sound-fail" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
+
+  <script type="module">
+    import {
+      getStorage,
+      ref as storageRef,
+      uploadString,
+      getDownloadURL
+    } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-storage.js";
+
+    // ------------ FIREBASE IMPORTS ------------
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+    import {
+      getAuth,
+      createUserWithEmailAndPassword,
+      signInWithEmailAndPassword,
+      signOut,
+      onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+    import {
+      getFirestore,
+      doc,
+      setDoc,
+      getDoc,
+      updateDoc,
+      collection,
+      addDoc,
+      getDocs,
+      query,
+      orderBy
+    } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
+    // ------------ CONFIG (THAY BẰNG CỦA BẠN) ------------
+    const firebaseConfig = {
+      apiKey: "AIzaSyBU7avb4R3fJl6qqmSTV7UQ1cYUEZ4odRs",
+      authDomain: "focused-web.firebaseapp.com",
+      projectId: "focused-web",
+      storageBucket: "focused-web.appspot.com",
+      messagingSenderId: "646122627696",
+      appId: "1:646122627696:web:20256f2ab444e1afaa4ab5",
+      measurementId: "G-06QCLZ35HM"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    import { browserLocalPersistence, setPersistence }
+      from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+
+    setPersistence(auth, browserLocalPersistence)
+      .then(() => console.log("Auth persistence OK"))
+      .catch(console.error);
+
+    const db = getFirestore(app);
+    const storage = getStorage(app);
+
+    // ------------ GLOBAL STATE ------------
+    const $ = id => document.getElementById(id);
+
+    let currentUser = null;
+    let userRef = null;
+
+    let subjectSeconds = {};
+    let userSubjects = ["Toán", "Tiếng Anh", "Lý thuyết"];
+
+    let streak = 0;
+    let lastActiveDay = null;
+    let chain = 0;
+
+    let cycleCount = 0;
+    const cyclesGoal = 4;
+
+    let isFocusing = false;
+    let focusTimer = null;
+    let targetSec = 25 * 60;
+    let totalSec = 0;
+    let currentSubject = "Toán";
+
+    // leaderboard data for pagination
+    let leaderboardData = [];
+    let lbPage = 0;
+    const LB_PAGE_SIZE = 10;
+
+    // avatar pending selection
+    let pendingAvatar = null;
+
+    // STORE ITEMS
+    const STORE_ITEMS = [
+      { id: 1, title: "Lootbox — Basic", cost: 40, type: "loot_basic" },
+      { id: 2, title: "Lootbox — Advanced", cost: 80, type: "loot_adv" },
+      { id: 3, title: "Lootbox — Mythic", cost: 150, type: "loot_myth" },
+      { id: 4, title: "Badge — Elite Focuser", cost: 70, type: "badge" }
+    ];
+
+    // ------------ TOAST ------------
+    function showToast(msg, type = "info") {
+      const t = $("toast");
+      if (!t) return;
+
+      t.innerText = msg;
+      t.style.background =
+        type === "success"
+          ? "rgba(22,163,74,0.96)"
+          : type === "warn"
+            ? "rgba(239,68,68,0.96)"
+            : "rgba(15,23,42,0.96)";
+
+      t.style.opacity = "1";
+      t.style.transform = "translateX(-50%) translateY(0)";
+      setTimeout(() => {
+        t.style.opacity = "0";
+        t.style.transform = "translateX(-50%) translateY(6px)";
+      }, 2300);
+    }
+
+    // ------------ THEME ------------
+    const themeMap = {
+      ocean: {
+        bg: "linear-gradient(135deg,#06b6d4,#0ea5e9)",
+        accent: "#0ea5e9"
+      },
+      sunset: {
+        bg: "linear-gradient(135deg,#fb923c,#f97316)",
+        accent: "#fb923c"
+      },
+      forest: {
+        bg: "linear-gradient(135deg,#16a34a,#22c55e)",
+        accent: "#22c55e"
+      }
+    };
+
+    function applyTheme(name) {
+      const t = themeMap[name] || themeMap.ocean;
+      document.documentElement.style.setProperty("--bg", t.bg);
+      document.documentElement.style.setProperty("--accent", t.accent);
+
+      $("themeSel").value = name;
+
+      if (currentUser) {
+        currentUser.theme = name;
+        saveUserProfile({ theme: name }).catch(() => { });
+      }
+    }
+
+    // ------------ FP & LEVEL ------------
+    function addFP(amount, countToTotal = true) {
+      if (!currentUser) return;
+
+      currentUser.fp = (currentUser.fp || 0) + amount;
+
+      if (countToTotal) {
+        currentUser.totalScore = (currentUser.totalScore || 0) + amount;
+      }
+    }
+
+    function calcLevel() {
+      const total = currentUser?.totalScore || 0;
+      return Math.floor(total / 100) + 1;
+    }
+
+    // ------------ LOAD OR CREATE USER PROFILE ------------
+    async function ensureUserProfile(user) {
+      userRef = doc(db, "users", user.uid);
+      const snap = await getDoc(userRef);
+
+      if (!snap.exists()) {
+        // FIRST TIME CREATE
+        const profile = {
+          email: user.email,
+          displayName: user.email.split("@")[0],
+          avatar: "",
+          fp: 0,
+          totalScore: 0,
+          chain: 0,
+          streak: 0,
+          lastActiveDay: null,
+          subjectSeconds: {},
+          subjects: ["Toán", "Tiếng Anh", "Lý thuyết"],
+          theme: "ocean",
+          createdAt: new Date()
+        };
+
+        await setDoc(userRef, profile);
+        currentUser = profile;
+      } else {
+        currentUser = snap.data();
+        currentUser.uid = user.uid;
+
+        // Migration: ensure totalScore exists
+        if (typeof currentUser.totalScore === "undefined") {
+          currentUser.totalScore = currentUser.fp || 0;
+        }
+      }
+
+      subjectSeconds[currentSubject] = (subjectSeconds[currentSubject] || 0) + targetSec;
+      userSubjects = currentUser.subjects || ["Toán", "Tiếng Anh", "Lý thuyết"];
+
+      streak = currentUser.streak || 0;
+      lastActiveDay = currentUser.lastActiveDay || null;
+      chain = currentUser.chain || 0;
+
+      renderSubjects();
+      updateUserUI();
+      renderStore();
+      await loadQuests();
+      await fetchLeaderboardData();
+    }
+
+    // ------------ SAVE USER PROFILE ------------
+    async function saveUserProfile(extra = {}) {
+      if (!userRef) return;
+
+      const data = {
+        ...currentUser,
+        subjectSeconds,
+        subjects: userSubjects,
+        streak,
+        lastActiveDay,
+        chain,
+        ...extra
+      };
+
+      currentUser = data;
+      currentUser.uid = user.uid;
+
+      await setDoc(userRef, data, { merge: true });
+      updateUserUI();
+    }
+
+    // ------------ UPDATE UI (avatar + FP + level + streak) ------------
+    function updateUserUI() {
+      if (!currentUser) return;
+
+      const level = calcLevel();
+
+      $("displayName").innerText = currentUser.displayName || currentUser.email;
+
+      $("lineTotal").innerText =
+        `Tổng điểm: ${currentUser.totalScore || 0} • Cấp: ${level}`;
+
+      $("lineFP").innerText =
+        `FP hiện có: ${currentUser.fp || 0}`;
+
+      $("streakText").innerText = (streak || 0) + " ngày";
+
+      const avatar = currentUser.avatar;
+      const fallback =
+        "https://ui-avatars.com/api/?background=0ea5e9&color=fff&name=" +
+        encodeURIComponent(currentUser.displayName || "U");
+
+      $("avatarImg").src = avatar || fallback;
+
+      $("avatarBtn").innerHTML = "";
+      const img = document.createElement("img");
+      img.src = avatar || fallback;
+      img.style.width = "100%";
+      img.style.height = "100%";
+      img.style.objectFit = "cover";
+      $("avatarBtn").appendChild(img);
+
+      applyTheme(currentUser.theme || "ocean");
+    }
+
+    // ------------ AUTH UI SWITCH ------------
+    function switchAuthTab(tab) {
+      if (tab === "login") {
+        $("tabLogin").classList.remove("ghost");
+        $("tabRegister").classList.add("ghost");
+        $("authLoginForm").style.display = "block";
+        $("authRegisterForm").style.display = "none";
+      } else {
+        $("tabRegister").classList.remove("ghost");
+        $("tabLogin").classList.add("ghost");
+        $("authLoginForm").style.display = "none";
+        $("authRegisterForm").style.display = "block";
+      }
+    }
+
+    $("tabLogin").onclick = () => switchAuthTab("login");
+    $("tabRegister").onclick = () => switchAuthTab("register");
+
+    // ------------ REGISTER ------------
+    $("registerBtn").onclick = async () => {
+      const email = $("regEmail").value.trim().toLowerCase();
+      const p1 = $("regPass1").value;
+      const p2 = $("regPass2").value;
+      const name = $("regName").value.trim();
+
+      if (!email || !p1 || !p2 || !name)
+        return showToast("Điền đầy đủ thông tin", "warn");
+      if (p1 !== p2)
+        return showToast("Mật khẩu nhập lại không đúng", "warn");
+
+      try {
+        const cred = await createUserWithEmailAndPassword(auth, email, p1);
+
+        await ensureUserProfile(cred.user);
+
+        currentUser.displayName = name;
+        await saveUserProfile({ displayName: name });
+
+        $("authModal").style.display = "none";
+        $("app").style.display = "block";
+
+        updateUserUI();
+        showToast("Đăng ký & đăng nhập thành công!", "success");
+      } catch (e) {
+        showToast("Firebase: " + e.message, "warn");
+      }
+    };
+
+    // ------------ LOGIN ------------
+    $("loginBtn").onclick = async () => {
+      const email = $("loginEmail").value.trim().toLowerCase();
+      const pass = $("loginPass").value;
+
+      if (!email || !pass)
+        return showToast("Nhập email & mật khẩu", "warn");
+
+      try {
+        const cred = await signInWithEmailAndPassword(auth, email, pass);
+        await ensureUserProfile(cred.user);
+
+        $("authModal").style.display = "none";
+        $("app").style.display = "block";
+
+        showToast("Đăng nhập thành công", "success");
+      } catch (e) {
+        showToast("Sai email hoặc mật khẩu", "warn");
+      }
+    };
+
+    // ------------ LOGOUT ------------
+    $("logoutBtn").onclick = async () => {
+      await signOut(auth);
+      currentUser = null;
+      userRef = null;
+      $("app").style.display = "none";
+      $("authModal").style.display = "flex";
+      showToast("Đã đăng xuất");
+    };
+
+    // ------------ FIREBASE AUTH OBSERVER ------------
+    onAuthStateChanged(auth, async user => {
+      if (user) {
+        await ensureUserProfile(user);
+        $("authModal").style.display = "none";
+        $("app").style.display = "block";
+      } else {
+        $("authModal").style.display = "flex";
+        $("app").style.display = "none";
+      }
+    });
+
+    // ------------------------------------------------------------------------------
+    //                                SUBJECTS
+    // ------------------------------------------------------------------------------
+    function renderSubjects() {
+      const sel = $("subjectSel");
+      sel.innerHTML = "";
+      userSubjects.forEach(s => {
+        const opt = document.createElement("option");
+        opt.value = s;
+        opt.textContent = s;
+        sel.appendChild(opt);
+      });
+    }
+
+    $("addSubjectBtn").onclick = async () => {
+      const name = $("newSubjectText").value.trim();
+      if (!name) return;
+
+      if (userSubjects.includes(name))
+        return showToast("Môn đã tồn tại");
+
+      userSubjects.push(name);
+      subjectSeconds[name] = subjectSeconds[name] || 0;
+
+      renderSubjects();
+      $("subjectSel").value = name;
+      $("newSubjectText").value = "";
+
+      await saveUserProfile();
+      showToast("Đã thêm môn");
+    };
+
+    // ------------------------------------------------------------------------------
+    //                                QUESTS
+    // ------------------------------------------------------------------------------
+    async function loadQuests() {
+      if (!userRef) return;
+
+      const colRef = collection(userRef, "quests");
+      const snap = await getDocs(colRef);
+
+      const qs = [];
+      snap.forEach(d => qs.push({ id: d.id, ...d.data() }));
+
+      renderQuests(qs);
+    }
+
+    function renderQuests(qs) {
+      const box = $("questsList");
+      box.innerHTML = "";
+
+      if (!qs.length) {
+        box.innerHTML = "<div class='mini-text'>Chưa có quest</div>";
+        return;
+      }
+
+      qs.forEach(q => {
+        const row = document.createElement("div");
+
+        row.innerHTML = `
+        <span style="${q.done ? 'text-decoration:line-through;opacity:.6' : ''}">
+          ${q.text}
+        </span>
+        <button class="btn ghost small" data-id="${q.id}">
+          ${q.done ? '⟲' : '✓'}
+        </button>
+      `;
+
+        const btn = row.querySelector("button");
+        btn.onclick = () => toggleQuest(q);
+
+        box.appendChild(row);
+      });
+    }
+
+    async function toggleQuest(q) {
+      if (!userRef) return;
+
+      const ref = doc(userRef, "quests", q.id);
+      const newDone = !q.done;
+
+      await setDoc(
+        ref,
+        { text: q.text, done: newDone, createdAt: q.createdAt || new Date() },
+        { merge: true }
+      );
+
+      // reward FP
+      if (newDone) {
+        addFP(5, true);
+        await saveUserProfile();
+        showToast("Hoàn thành quest +5 FP", "success");
+        await fetchLeaderboardData();
+      }
+
+      await loadQuests();
+    }
+
+    $("addQuestBtn").onclick = async () => {
+      const text = $("newQuestText").value.trim();
+      if (!text || !userRef) return;
+
+      await addDoc(collection(userRef, "quests"), {
+        text,
+        done: false,
+        createdAt: new Date()
+      });
+
+      $("newQuestText").value = "";
+      await loadQuests();
+      showToast("Đã thêm quest");
+    };
+
+    // ------------------------------------------------------------------------------
+    //                                STORE / LOOTBOX
+    // ------------------------------------------------------------------------------
+    function renderStore() {
+      const box = $("storeList");
+      box.innerHTML = "";
+
+      STORE_ITEMS.forEach(it => {
+        const d = document.createElement("div");
+        d.style.flex = "1 1 140px";
+        d.style.background = "rgba(15,23,42,0.9)";
+        d.style.borderRadius = "12px";
+        d.style.padding = "8px 10px";
+        d.style.border = "1px solid rgba(148,163,184,0.7)";
+
+        d.innerHTML = `
+        <div style="font-weight:700;">${it.title}</div>
+        <div class="mini-text">${it.cost} FP</div>
+        <button class="btn ghost small storeBtn"
+                data-id="${it.id}"
+                style="margin-top:6px;width:100%;">Đổi</button>
+      `;
+
+        box.appendChild(d);
+      });
+
+      box.querySelectorAll(".storeBtn").forEach(btn => {
+        btn.onclick = () => redeemItem(Number(btn.dataset.id));
+      });
+    }
+
+    async function redeemItem(id) {
+      if (!currentUser)
+        return showToast("Đăng nhập trước", "warn");
+
+      const item = STORE_ITEMS.find(x => x.id === id);
+      if (!item) return;
+
+      if ((currentUser.fp || 0) < item.cost)
+        return showToast("Không đủ FP", "warn");
+
+      // Trừ FP (không cộng totalScore)
+      currentUser.fp -= item.cost;
+
+      let msg = "Đổi thành công!";
+
+      //----------------------------------------------------------------
+      // LOOTBOX REWARD TABLE
+      //----------------------------------------------------------------
+      if (item.type.startsWith("loot")) {
+        const roll = Math.random();
+        let rarity = "N", reward = 10;
+
+        if (item.type === "loot_basic") {
+          if (roll < 0.03) { rarity = "SR"; reward = 80; }
+          else if (roll < 0.15) { rarity = "R"; reward = 35; }
+        }
+
+        if (item.type === "loot_adv") {
+          if (roll < 0.05) { rarity = "UR"; reward = 220; }
+          else if (roll < 0.2) { rarity = "SSR"; reward = 150; }
+          else if (roll < 0.5) { rarity = "SR"; reward = 90; }
+        }
+
+        if (item.type === "loot_myth") {
+          rarity = "UR"; reward = 400;
+        }
+
+        addFP(reward, true);
+        msg = `Lootbox ${rarity}! +${reward} FP`;
+      }
+
+      //----------------------------------------------------------------
+      // BADGE (chỉ cosmetic, không tăng FP)
+      //----------------------------------------------------------------
+
+      await saveUserProfile();
+      await fetchLeaderboardData();
+      showToast(msg, "success");
+    }
+
+    // ------------------------------------------------------------------------------
+    //                                LEADERBOARD (FIX)
+    // ------------------------------------------------------------------------------
+    async function fetchLeaderboardData() {
+      leaderboardData = [];
+
+      const qUsers = query(collection(db, "users"), orderBy("fp", "desc"));
+      const snap = await getDocs(qUsers);
+
+      snap.forEach(d => {
+        const u = d.data();
+        leaderboardData.push({
+          displayName: u.displayName || u.email,
+          fp: u.fp || 0
+        });
+      });
+
+      lbPage = 0;
+      renderLeaderboard();
+    }
+
+    function renderLeaderboard() {
+      const box = $("leaderboardList");
+      box.innerHTML = "";
+
+      if (!leaderboardData.length) {
+        box.innerHTML = "<li class='mini-text'>Chưa có người chơi</li>";
+        $("lbPageInfo").innerText = "0/0";
+        $("lbPrev").disabled = true;
+        $("lbNext").disabled = true;
+        return;
+      }
+
+      const totalPages = Math.ceil(leaderboardData.length / LB_PAGE_SIZE);
+      if (lbPage >= totalPages) lbPage = totalPages - 1;
+
+      const start = lbPage * LB_PAGE_SIZE;
+      const end = Math.min(start + LB_PAGE_SIZE, leaderboardData.length);
+
+      for (let i = start; i < end; i++) {
+        const u = leaderboardData[i];
+        const li = document.createElement("li");
+
+        li.innerHTML = `
+        <span>${i + 1}. ${u.displayName}</span>
+        <strong style="float:right">${u.fp} FP</strong>
+      `;
+
+        box.appendChild(li);
+      }
+
+      $("lbPageInfo").innerText = `Trang ${lbPage + 1}/${totalPages}`;
+      $("lbPrev").disabled = lbPage === 0;
+      $("lbNext").disabled = lbPage >= totalPages - 1;
+    }
+
+    $("lbPrev").onclick = () => {
+      if (lbPage > 0) {
+        lbPage--;
+        renderLeaderboard();
+      }
+    };
+
+    $("lbNext").onclick = () => {
+      const total = Math.ceil(leaderboardData.length / LB_PAGE_SIZE);
+      if (lbPage < total - 1) {
+        lbPage++;
+        renderLeaderboard();
+      }
+    };
+
+    // ===================================================================
+    //                       DAILY STATS SAVE
+    // ===================================================================
+    async function saveDailyStats(seconds, subject) {
+      if (!userRef) return;
+      const day = new Date().toISOString().slice(0, 10);
+      const ref = doc(userRef, "dailyStats", day);
+      const snap = await getDoc(ref);
+
+      let data = { totalSeconds: 0, subjects: {} };
+      if (snap.exists()) data = snap.data();
+
+      data.totalSeconds = (data.totalSeconds || 0) + seconds;
+      data.subjects = data.subjects || {};
+      data.subjects[subject] = (data.subjects[subject] || 0) + seconds;
+
+      await setDoc(ref, data);
+    }
+
+    // ===================================================================
+    //                       TIMER / POMODORO
+    // ===================================================================
+    function setUIEnabled(enabled) {
+      const elems = document.querySelectorAll("button,input,select,textarea");
+      elems.forEach(el => {
+        if (el.dataset.lockExempt === "true") return;
+        if (enabled) el.removeAttribute("disabled");
+        else el.setAttribute("disabled", "disabled");
+      });
+    }
+
+    function updateTimerUI() {
+      const rem = Math.max(0, targetSec - totalSec);
+      const mm = String(Math.floor(rem / 60)).padStart(2, "0");
+      const ss = String(rem % 60).padStart(2, "0");
+
+      $("timeLabel").innerText = mm + ":" + ss;
+
+      const pct = Math.min(1, totalSec / targetSec);
+      $("timerSub").innerText = Math.round(pct * 100) + "%";
+
+      const circ = $("progressCircle");
+      const dash = 2 * Math.PI * 45;
+      circ.style.strokeDashoffset = String(dash * (1 - pct));
+
+      // --- FP 10-minute block progress ---
+      const BLOCK = 10 * 60;
+      const secInBlock = totalSec % BLOCK;
+      const pctBlock = Math.min(1, secInBlock / BLOCK);
+
+      $("fpBlockInner").style.width = (pctBlock * 100) + "%";
+      $("fpBlockLabel").innerText = `${Math.floor(secInBlock / 60)} / 10 phút`;
+    }
+
+    async function startFocus() {
+      if (!currentUser) return showToast("Đăng nhập trước", "warn");
+      if (isFocusing) return;
+
+      const mins = Number($("durationSel").value || 25);
+      targetSec = mins * 60;
+      totalSec = 0;
+      currentSubject = $("subjectSel").value || "Chung";
+
+      isFocusing = true;
+
+      setUIEnabled(false);
+      $("endBtn").removeAttribute("disabled");
+
+      $("lockOverlay").style.display = "flex";
+      updateTimerUI();
+
+      try {
+        if (document.fullscreenEnabled)
+          await document.documentElement.requestFullscreen();
+      } catch (_) { }
+
+      focusTimer = setInterval(() => {
+        totalSec++;
+        updateTimerUI();
+
+        if (totalSec >= targetSec) {
+          endSession(true);
+        }
+      }, 1000);
+    }
+
+    $("startBtn").onclick = startFocus;
+    $("endBtn").onclick = () => endSession(false);
+
+    // ===================================================================
+    //                       END SESSION
+    // ===================================================================
+    async function endSession(success) {
+      if (!isFocusing) return;
+      isFocusing = false;
+
+      clearInterval(focusTimer);
+      $("lockOverlay").style.display = "none";
+
+      if (document.fullscreenElement) {
+        try { await document.exitFullscreen(); } catch (_) { }
+      }
+
+      setUIEnabled(true);
+      updateTimerUI();
+
+      if (success) {
+        const minutes = Math.round(targetSec / 60);
+
+        addFP(minutes, true);
+        chain = (chain || 0) + minutes;
+        subjectSeconds[currentSubject] = (subjectSeconds[currentSubject] || 0) + targetSec;
+
+        const today = new Date().toISOString().slice(0, 10);
+
+        // streak calculation
+        if (!lastActiveDay) {
+          streak = 1;
+        } else {
+          const last = new Date(lastActiveDay);
+          const now = new Date(today);
+          const diff = Math.round((now - last) / 86400000);
+
+          if (diff === 1) streak = (streak || 0) + 1;
+          else if (diff > 1) streak = 1; // streak reset
+        }
+
+        lastActiveDay = today;
+        cycleCount++;
+
+        $("cycleInfo").innerText = `${cycleCount}/${cyclesGoal}`;
+        $("sound-complete").play().catch(() => { });
+
+        showToast(`Hoàn thành +${minutes} FP`, "success");
+
+        await saveUserProfile();
+        await saveDailyStats(targetSec, currentSubject);
+        await fetchLeaderboardData();
+      } else {
+        chain = Math.floor((chain || 0) / 2);
+
+        $("sound-fail").play().catch(() => { });
+        showToast("Phiên bị huỷ", "warn");
+
+        await saveUserProfile();
+        await fetchLeaderboardData();
+      }
+    }
+
+    // ===================================================================
+    //                      ANTI-CHEAT (3 GIÂY COUNTDOWN)
+    // ===================================================================
+    let violationTimer = null;
+    let violationCountdown = 3;
+
+    function startViolationCountdown(reason) {
+      if (!isFocusing) return;
+
+      violationCountdown = 3;
+      showToast(`Rời khỏi màn hình (${reason}) — quay lại trong 3s`, "warn");
+
+      violationTimer = setInterval(() => {
+        violationCountdown--;
+
+        showToast(`Quay lại trong ${violationCountdown}s`, "warn");
+
+        if (violationCountdown <= 0) {
+          clearInterval(violationTimer);
+          violationTimer = null;
+          endSession(false);
+        }
+      }, 1000);
+    }
+
+    function cancelViolationCountdown() {
+      if (violationTimer) {
+        clearInterval(violationTimer);
+        violationTimer = null;
+        showToast("Đã quay lại phiên", "success");
+      }
+    }
+
+    // rời tab
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) startViolationCountdown("ẩn tab");
+      else cancelViolationCountdown();
+    });
+
+    // rời cửa sổ → NHẠY trên đa màn hình
+    window.addEventListener("blur", () => {
+      if (isFocusing) startViolationCountdown("rời app");
+    });
+    window.addEventListener("focus", () => cancelViolationCountdown());
+
+    // thoát fullscreen
+    document.addEventListener("fullscreenchange", () => {
+      if (!document.fullscreenElement) startViolationCountdown("thoát fullscreen");
+      else cancelViolationCountdown();
+    });
+
+    // LOCK overlay acknowledge
+    $("lockOkBtn").onclick = () => $("lockOverlay").style.display = "none";
+
+    // ===================================================================
+    //                      AVATAR PICKER (FULL)
+    // ===================================================================
+    const presetAvatars = [
+      "https://i.pravatar.cc/150?img=1",
+      "https://i.pravatar.cc/150?img=2",
+      "https://i.pravatar.cc/150?img=3",
+      "https://i.pravatar.cc/150?img=4",
+      "https://i.pravatar.cc/150?img=5",
+      "https://i.pravatar.cc/150?img=6"
+    ];
+
+    function renderAvatarPresets() {
+      const grid = $("avatarGrid");
+      grid.innerHTML = "";
+      presetAvatars.forEach(url => {
+        const box = document.createElement("div");
+        box.className = "avatarPreset";
+        box.innerHTML = `<img src="${url}"/>`;
+
+        box.onclick = () => {
+          pendingAvatar = url;
+          $("avatarApply").disabled = false;
+          grid.querySelectorAll(".avatarPreset").forEach(p => p.classList.remove("selected"));
+          box.classList.add("selected");
+        };
+
+        grid.appendChild(box);
+      });
+    }
+
+    $("avatarBtn").onclick = () => {
+      pendingAvatar = null;
+      $("avatarApply").disabled = true;
+      renderAvatarPresets();
+      $("avatarModal").style.display = "flex";
+    };
+
+    $("avatarFile").onchange = ev => {
+      const file = ev.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = e => {
+        pendingAvatar = e.target.result;
+        $("avatarApply").disabled = false;
+        document.querySelectorAll(".avatarPreset").forEach(p => p.classList.remove("selected"));
+      };
+      reader.readAsDataURL(file);
+    };
+
+    $("avatarApply").onclick = async () => {
+      if (!pendingAvatar || !currentUser) return;
+
+      showToast("Đang lưu avatar...", "info");
+
+      const avatarPath = `avatars/${currentUser.uid}_${Date.now()}.png`;
+      const imgRef = storageRef(storage, avatarPath);
+
+      await uploadString(imgRef, pendingAvatar, "data_url");
+      const url = await getDownloadURL(imgRef);
+
+      currentUser.avatar = url;
+      await saveUserProfile({ avatar: url });
+
+      $("avatarImg").src = url;
+      $("avatarBtn").innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:cover;">`;
+
+      $("avatarModal").style.display = "none";
+      pendingAvatar = null;
+
+      showToast("Đổi avatar thành công!", "success");
+    };
+
+    $("avatarClose").onclick = () => $("avatarModal").style.display = "none";
+
+    // ===================================================================
+    //                           APPLY THEME
+    // ===================================================================
+    $("themeSel").onchange = e => applyTheme(e.target.value);
+
+    // ===================================================================
+    //                             INIT
+    // ===================================================================
+    updateTimerUI();
+    renderStore();
+
+  </script>
+</body>
+
+</html>
